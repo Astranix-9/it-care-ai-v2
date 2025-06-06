@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT介護AI v2.0</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background: #0f0f23; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        .header { background: linear-gradient(90deg, #1a1a2e, #16213e); padding: 1rem 2rem; border-bottom: 1px solid #2a2a3e; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.2rem; font-weight: 600; }
+        .version { font-size: 0.8rem; color: #10b981; }
+        
+        .container { flex: 1; max-width: 800px; margin: 0 auto; width: 100%; padding: 0 1rem; display: flex; flex-direction: column; }
+        .chat-area { flex: 1; padding: 2rem 0; overflow-y: auto; }
+        
+        .welcome { text-align: center; padding: 2rem; color: #9ca3af; }
+        .welcome h2 { color: #fff; margin-bottom: 1rem; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 2rem; }
+        .card { background: #1a1a2e; border: 1px solid #374151; border-radius: 10px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .card:hover { border-color: #10b981; transform: translateY(-2px); }
+        .card-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .card-title { font-weight: 600; margin-bottom: 0.5rem; }
+        .card-desc { font-size: 0.85rem; color: #9ca3af; }
+        
+        .message { margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+        .message.user { flex-direction: row-reverse; }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .avatar.ai { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .avatar.user { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .content { max-width: 70%; background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 1rem; line-height: 1.5; border: 1px solid #374151; }
+        .message.user .content { background: #2563eb; border-color: #3b82f6; }
+        
+        .typing { display: none; margin-bottom: 1.5rem; }
+        .typing-content { background: #1a1a2e; padding: 1rem 1.25rem; border-radius: 1rem; border: 1px solid #374151; display: flex; align-items: center; gap: 0.5rem; max-width: 70%; }
+        .dots { display: flex; gap: 4px; }
+        .dots span { width: 6px; height: 6px; background: #9ca3af; border-radius: 50%; animation: typing 1.4s infinite; }
+        .dots span:nth-child(2) { animation-delay: 0.2s; }
+        .dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-8px); opacity: 1; } }
+        
+        .input-area { background: #1a1a2e; border: 1px solid #374151; border-radius: 1rem; padding: 1rem; margin-bottom: 2rem; display: flex; gap: 0.75rem; align-items: flex-end; }
+        .input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 1rem; resize: none; font-family: inherit; }
+        .input::placeholder { color: #6b7280; }
+        .btn { width: 40px; height: 40px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.2s; }
+        .voice-btn { background: #ef4444; color: white; }
+        .voice-btn:hover { background: #dc2626; }
+        .send-btn { background: #10b981; color: white; }
+        .send-btn:hover { background: #059669; }
+        
+        .status { position: fixed; bottom: 20px; right: 20px; background: #1a1a2e; border: 1px solid #374151; border-radius: 10px; padding: 0.75rem; font-size: 0.8rem; font-family: monospace; max-width: 300px; }
+        .status.error { border-color: #ef4444; background: #7f1d1d; }
+        .status.success { border-color: #10b981; background: #065f46; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">🤖 IT介護AI</div>
+        <div class="version">v2.0</div>
+    </header>
+    
+    <main class="container">
+        <div class="chat-area" id="chatArea">
+            <div class="welcome" id="welcome">
+                <h2>専門サポートAIへようこそ</h2>
+                <p>IT操作とエンタメ作品について、なんでもお聞きください</p>
+                
+                <div class="cards">
+                    <div class="card" onclick="sendQuick('スマホの使い方を教えて')">
+                        <div class="card-icon">📱</div>
+                        <div class="card-title">スマホサポート</div>
+                        <div class="card-desc">基本操作から設定まで</div>
+                    </div>
+                    <div class="card" onclick="sendQuick('パソコンの調子が悪い')">
+                        <div class="card-icon">💻</div>
+                        <div class="card-title">PC サポート</div>
+                        <div class="card-desc">トラブル解決をお手伝い</div>
+                    </div>
+                    <div class="card" onclick="sendQuick('おすすめの映画を教えて')">
+                        <div class="card-icon">🎬</div>
+                        <div class="card-title">映画相談</div>
+                        <div class="card-desc">作品選びや感想トーク</div>
+                    </div>
+                    <div class="card" onclick="sendQuick('面白いアニメある？')">
+                        <div class="card-icon">📺</div>
+                        <div class="card-title">アニメ相談</div>
+                        <div class="card-desc">おすすめや感想交換</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="typing" id="typing">
+                <div class="avatar ai">🤖</div>
+                <div class="typing-content">
+                    <span>AI が考え中</span>
+                    <div class="dots"><span></span><span></span><span></span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-area">
+            <textarea class="input" id="input" placeholder="メッセージを入力..." rows="1"></textarea>
+            <button class="btn voice-btn" onclick="toggleVoice()">🎤</button>
+            <button class="btn send-btn" onclick="sendMessage()">📤</button>
+        </div>
+    </main>
+    
+    <div class="status" id="status">
+        システム初期化中...
+    </div>
+
+    <script>
+        // === 設定 ===
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyI4_81YN8I42rLLRQOVaNoPYOEkxziUMb6Kcr9GUqHoTVyud-UUuJoQKKITvw6GktY/exec'; // ⚠️ Google Apps ScriptのWeb App URLを設定
+        
+        let isTyping = false;
+        let recognition = null;
+        let isListening = false;
+        
+        // === 初期化 ===
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStatus('システム準備完了', 'success');
+            document.getElementById('input').focus();
+            
+            // 音声認識設定
+            if ('webkitSpeechRecognition' in window) {
+                const SpeechRecognition = window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'ja-JP';
+                
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('input').value = transcript;
+                    stopVoice();
+                };
+                
+                recognition.onend = function() { stopVoice(); };
+                recognition.onerror = function() { stopVoice(); };
+            }
+        });
+        
+        // === 音声機能 ===
+        function toggleVoice() {
+            if (!recognition) {
+                alert('音声認識がサポートされていません');
+                return;
+            }
+            
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                startVoice();
+            }
+        }
+        
+        function startVoice() {
+            isListening = true;
+            document.querySelector('.voice-btn').innerHTML = '🔴';
+            updateStatus('音声入力中...', 'success');
+        }
+        
+        function stopVoice() {
+            isListening = false;
+            document.querySelector('.voice-btn').innerHTML = '🎤';
+            updateStatus('音声入力終了', 'success');
+        }
+        
+        // === メッセージ送信 ===
+        function sendQuick(message) {
+            document.getElementById('input').value = message;
+            sendMessage();
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const message = input.value.trim();
+            
+            if (!message || isTyping) return;
+            
+            // UI更新
+            hideWelcome();
+            addMessage(message, 'user');
+            input.value = '';
+            showTyping();
+            updateStatus('AI に送信中...', 'success');
+            
+            try {
+                const response = await callAPI(message);
+                hideTyping();
+                addMessage(response, 'ai');
+                updateStatus('応答完了', 'success');
+            } catch (error) {
+                hideTyping();
+                addMessage('申し訳ございません。エラーが発生しました。\n\n' + error.message, 'ai');
+                updateStatus('エラー: ' + error.message, 'error');
+                console.error('API Error:', error);
+            }
+        }
+        
+        // === API呼び出し ===
+        async function callAPI(message) {
+            updateStatus('API接続中...', 'success');
+            
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            });
+            
+            updateStatus('レスポンス解析中...', 'success');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success && data.message) {
+                return data.message;
+            } else {
+                throw new Error(data.error || '不明なエラー');
+            }
+        }
+        
+        // === UI操作 ===
+        function addMessage(text, sender) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${sender}`;
+            avatar.innerHTML = sender === 'ai' ? '🤖' : '👤';
+            
+            const content = document.createElement('div');
+            content.className = 'content';
+            content.innerHTML = text.replace(/\n/g, '<br>');
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            chatArea.appendChild(messageDiv);
+            
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        function showTyping() {
+            isTyping = true;
+            document.getElementById('typing').style.display = 'flex';
+            document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+        }
+        
+        function hideTyping() {
+            isTyping = false;
+            document.getElementById('typing').style.display = 'none';
+        }
+        
+        function hideWelcome() {
+            document.getElementById('welcome').style.display = 'none';
+        }
+        
+        function updateStatus(message, type = '') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+        
+        // === イベントリスナー ===
+        document.getElementById('input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        document.getElementById('input').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    </script>
+</body>
+</html>
